@@ -1,29 +1,32 @@
 import sys
-import traceback
 
-def error_message_detail(error, error_detail):
+def error_message_detail(error, error_detail: sys):
     """
-    Build a short error message using the current exception info from error_detail.
-    error_detail is typically the sys module (passed as sys).
+    Build a detailed error message safely.
     """
-    _, _, exc_tb = error_detail.exc_info()
+    try:
+        # get the traceback info
+        _, _, exc_tb = error_detail.exc_info()
+        if exc_tb is None:
+            return f"Error occurred: {error}"
 
-    if exc_tb is None:
-        return f"Error occurred: {error}"
+        file_name = exc_tb.tb_frame.f_code.co_filename
+        line_no = exc_tb.tb_lineno
 
-    file_name = exc_tb.tb_frame.f_code.co_filename
-    line_no = exc_tb.tb_lineno
+        return (
+            f"Error occurred in python script [{file_name}] "
+            f"at line number [{line_no}] "
+            f"with error message [{error}]"
+        )
 
-    error_message = (
-        "Error occurred in python script name [{0}] line number [{1}] error message [{2}]"
-        .format(file_name, line_no, error)
-    )
-    return error_message
-
+    except Exception as e:
+        # fallback: never throw an exception here
+        return f"Error occurred: {error}. (Additional error in error handler: {e})"
 
 class CustomException(Exception):
-    def init(self, error_message, error_detail):
+    def init(self, error_message, error_detail: sys):
         super().init(error_message)
+        # safely build the error message
         self.error_message = error_message_detail(error_message, error_detail)
 
     def str(self):
